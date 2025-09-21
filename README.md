@@ -1,74 +1,33 @@
 # Assignment4_Embedded_System
-Lập trình GPIO và Ngắt ngoài (EXTI) trên STM32F1
-Dự án này là một ví dụ minh họa cách kết hợp hoạt động của GPIO và Ngắt ngoài (External Interrupt - EXTI) trên vi điều khiển STM32F103, sử dụng thư viện Standard Peripheral Library (SPL).
+Chắc chắn rồi! Dưới đây là nội dung được viết lại theo đúng cấu trúc và văn phong mà bạn đã cung cấp.
 
-Chương trình thực hiện hai tác vụ chạy song song:
+Lập trình GPIO và Giao tiếp UART (với Ngắt) trên STM32F1
+Dự án này là một ví dụ minh họa cách kết hợp hoạt động của GPIO và giao tiếp UART sử dụng ngắt trên vi điều khiển STM32F103, dùng thư viện Standard Peripheral Library (SPL).
 
-Một đèn LED nhấp nháy liên tục theo một chu kỳ định sẵn trong vòng lặp chính.
+Chương trình cho phép vi điều khiển nhận lệnh văn bản (text command) từ một máy tính thông qua cổng nối tiếp để điều khiển trạng thái của một đèn LED. Toàn bộ quá trình nhận dữ liệu được xử lý bằng ngắt để tối ưu hóa hiệu năng.
 
-Một đèn LED khác được điều khiển bật/tắt mỗi khi người dùng nhấn nút, sử dụng cơ chế ngắt.
+Tính năng 📜
+Điều khiển GPIO: Cấu hình một chân GPIO ở chế độ xuất (Output Push-Pull) để điều khiển một đèn LED duy nhất.
 
-## Tính năng
-Đa nhiệm đơn giản: Minh họa cách xử lý hai tác vụ khác nhau: một tác vụ lặp đi lặp lại (nháy LED) và một tác vụ dựa trên sự kiện (nhấn nút).
+Giao tiếp UART: Cấu hình và sử dụng USART1 để gửi và nhận dữ liệu nối tiếp với máy tính, hoạt động như một giao diện điều khiển.
 
-Điều khiển GPIO: Cấu hình các chân GPIO ở cả chế độ xuất (Output) để điều khiển LED và chế độ nhập (Input) để đọc nút nhấn.
+Sử dụng Ngắt UART: Cấu hình ngắt USART_IT_RXNE (Receive Not Empty) để chương trình có thể phản ứng ngay lập tức mỗi khi có byte dữ liệu mới đến mà không cần phải kiểm tra liên tục trong vòng lặp chính (polling).
 
-Sử dụng Ngắt ngoài (EXTI): Cấu hình ngắt ngoài để chương trình có thể phản ứng ngay lập tức với sự kiện nhấn nút mà không cần kiểm tra liên tục trong vòng lặp chính.
+Xử lý Lệnh Văn bản: Xây dựng một bộ đệm (buffer) để lưu trữ các ký tự nhận được và xử lý chuỗi lệnh hoàn chỉnh (ví dụ: "ON", "OFF") khi nhận được ký tự xuống dòng.
 
-Chống dội phím: Áp dụng một kỹ thuật chống dội phím đơn giản bên trong trình phục vụ ngắt để đảm bảo mỗi lần nhấn nút chỉ được ghi nhận một lần.
-
-## Cấu hình phần cứng
+Cấu hình phần cứng 🛠️
 Vi điều khiển: STM32F103C8T6 (Board Blue Pill hoặc tương tự).
 
-LED 1 (Nhấp nháy tự động):
+Đèn LED:
 
-Nối với chân PC13.
+Nối với chân PA4.
 
-LED 2 (Điều khiển bằng nút nhấn):
+Giao tiếp Nối tiếp (với máy tính):
 
-Nối với chân PC14.
+Nối chân PA9 (TX) của STM32 với chân RX của mạch chuyển USB-to-TTL.
 
-Nút nhấn:
+Nối chân PA10 (RX) của STM32 với chân TX của mạch chuyển USB-to-TTL.
 
-Nối một chân của nút nhấn vào chân PA0.
+Nối chân GND của hai board với nhau.
 
-Nối chân còn lại của nút nhấn vào GND.
-
-Lưu ý: Chân PA0 được cấu hình là Input Pull-Up, do đó không cần điện trở kéo ngoài.
-
-## Cách hoạt động của code
-Hàm GPIO_Config():
-
-Kích hoạt xung clock cho GPIOA (dùng cho nút nhấn) và GPIOC (dùng cho 2 LED).
-
-Cấu hình PC13 và PC14 là Output Push-Pull để điều khiển hai đèn LED.
-
-Cấu hình PA0 là Input Pull-Up để đọc tín hiệu từ nút nhấn.
-
-Hàm EXTI0_Config():
-
-Cấu hình ngắt ngoài trên đường EXTI_Line0 được kết nối với chân PA0.
-
-Ngắt được thiết lập để kích hoạt bởi cạnh xuống (Falling Edge), tức là khi nút được nhấn và chân PA0 được kéo từ mức CAO xuống THẤP.
-
-Kích hoạt và cài đặt độ ưu tiên cho trình phục vụ ngắt EXTI0_IRQn trong NVIC.
-
-Hàm main():
-
-Gọi các hàm cấu hình GPIO_Config() và EXTI0_Config().
-
-Vào một vòng lặp while(1) vô tận.
-
-Bên trong vòng lặp, trạng thái của LED 1 (PC13) được đảo liên tục sau mỗi 500ms, tạo ra hiệu ứng nhấp nháy với tần số 1Hz. Vòng lặp này chạy độc lập và không quan tâm đến nút nhấn.
-
-Hàm EXTI0_IRQHandler() (Trình phục vụ ngắt):
-
-Hàm này sẽ tự động được gọi mỗi khi nút nhấn ở chân PA0 được nhấn.
-
-Đầu tiên, nó kiểm tra và xóa cờ ngắt để sẵn sàng cho lần ngắt tiếp theo.
-
-Thực hiện một delay ngắn (~50ms) để chống dội phím.
-
-Kiểm tra lại để chắc chắn rằng nút nhấn vẫn đang được giữ.
-
-Nếu đúng, trạng thái của LED 2 (PC14) sẽ được đảo (^=).
+Lưu ý: Cần một phần mềm terminal trên máy tính (như PuTTY, Tera Term) được cấu hình ở 9600 baud, 8 data bits, 1 stop bit, no parity.
